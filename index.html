@@ -221,7 +221,7 @@
     function finishPractice() {
       const date = document.getElementById('practiceDate').value;
       let text = `Practice Date: ${date}\n\n`;
-      document.querySelectorAll('#scoreBody<tr>').forEach(row => {
+      document.querySelectorAll('#scoreBody tr').forEach(row => {
         const name = row.querySelector('.name-input').value || 'Unnamed';
         const score = row.querySelector('.score-cell').textContent;
         text += `${name}: ${score}\n`;
