@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NAQT Score Sheet</title>
+
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap">
+
+    <style>
+        /* Updated styling */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .settings, .navigation, .tournament-controls, .round-navigation {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .settings div, .navigation div, .tournament-controls div, .round-navigation div {
+            display: flex;
+            align-items: center;
+        }
+
+        .settings label {
+            margin-right: 5px;
+            font-weight: 500;
+        }
+
+        .team-name-input, .player-name-input, input[type="number"], input[type="text"] {
+            padding: 8px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+            width: 200px;
+        }
+
+        .team-name-input:focus, .player-name-input:focus, input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #2980b9;
+        }
+
+       .score-sheet {
+  max-width: none;      /* remove the width cap */
+  width: 100%;          /* let it span the container */
+  overflow-x: visible;  /* turn off the inner scrollbar */
+}
+
+table {
+  table-layout: fixed;  /* force even column widths */
+  width: 100%;          /* fill the .score-sheet area */
+}
+
+th, td {
+  padding: 6px;         /* tighten up spacing */
+  font-size: 0.85em;    /* shrink text slightly so more fits */
+}
+
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 500;
+        }
+
+        .player-check button {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #ccc;
+            background-color: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.2s;
+            border-radius: 4px;
+        }
+
+        .player-check button:hover {
+            transform: translateY(-2px);
+        }
+
+        .bonus input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .notes-box {
+            width: 100%;
+            height: 50px;
+            resize: vertical;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .navigation button, .tournament-controls button, .round-navigation button {
+            padding: 10px 20px;
+            margin-top: 10px;
+            background-color: #2980b9;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .navigation button:hover, .tournament-controls button:hover, .round-navigation button:hover {
+            background-color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .navigation button:disabled, .tournament-controls button:disabled, .round-navigation button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress {
+            text-align: center;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .progress span {
+            color: #2980b9;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .divider {
+            border-left: 2px solid #ccc;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .settings, .navigation, .tournament-controls, .round-navigation {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            .team-name-input, .player-name-input, input[type="number"], input[type="text"] {
+                width: 100%;
+            }
+        }
+
+        /* Printer-friendly styles */
+        @media print {
+            .navigation, .tournament-controls, .settings, .round-navigation {
+                display: none;
+            }
+            .hidden {
+                display: table-row !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NAQT Score Sheet</h1>
+
+    <!-- Tournament Controls -->
+    <div class="tournament-controls">
+        <div><strong>Current Round: <span id="currentRoundDisplay">1</span></strong></div>
+        <button onclick="startNewTournament()">Start New Tournament</button>
+        <button onclick="finishRound()">Finish Round</button>
+    </div>
+
+    <!-- View Controls -->
+    <div class="tournament-controls">
+        <button onclick="showWholeView()">Whole Score Sheet View</button>
+        <button onclick="showCurrentQuestionView()">Current Question View</button>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="tournament-controls">
+        <button onclick="exportCurrentRound()">Export Current Round</button>
+        <button onclick="exportTournament()">Export Tournament</button>
+    </div>
+
+    <!-- Round Navigation -->
+    <div class="round-navigation" id="roundNavigation">
+        <!-- Buttons for navigating between rounds will be added here -->
+    </div>
+
+    <!-- Tournament Details -->
+    <div class="settings">
+        <div>
+            <label for="tournamentName">Tournament Name:</label>
+            <input type="text" id="tournamentName" placeholder="Enter Tournament Name">
+        </div>
+        <div>
+            <label for="roomNumber">Room Number:</label>
+            <input type="text" id="roomNumber" placeholder="Enter Room Number">
+        </div>
+        <div>
+            <label for="powerVal">Power Value:</label>
+            <input type="number" id="powerVal" value="15">
+        </div>
+        <div>
+            <label for="tossupVal">Tossup Value:</label>
+            <input type="number" id="tossupVal" value="10">
+        </div>
+        <div>
+            <label for="bonusVal">Bonus Value:</label>
+            <input type="number" id="bonusVal" value="10">
+        </div>
+        <div>
+            <label for="negVal">Neg Value:</label>
+            <input type="number" id="negVal" value="-5">
+        </div>
+    </div>
+
+    <!-- Team Names and Player Names -->
+    <div class="settings">
+        <div>
+            <label for="team1">Team 1 Name:</label>
+            <input type="text" id="team1" class="team-name-input" placeholder="Enter Team 1 Name">
+        </div>
+        <div>
+            <label for="player1_1_name">Player 1:</label>
+            <input type="text" id="player1_1_name" class="player-name-input" placeholder="Player 1 Name">
+        </div>
+        <div>
+            <label for="player1_2_name">Player 2:</label>
+            <input type="text" id="player1_2_name" class="player-name-input" placeholder="Player 2 Name">
+        </div>
+        <div>
+            <label for="player1_3_name">Player 3:</label>
+            <input type="text" id="player1_3_name" class="player-name-input" placeholder="Player 3 Name">
+        </div>
+        <div>
+            <label for="player1_4_name">Player 4:</label>
+            <input type="text" id="player1_4_name" class="player-name-input" placeholder="Player 4 Name">
+        </div>
+    </div>
+
+    <div class="settings">
+        <div>
+            <label for="team2">Team 2 Name:</label>
+            <input type="text" id="team2" class="team-name-input" placeholder="Enter Team 2 Name">
+        </div>
+        <div>
+            <label for="player2_1_name">Player 1:</label>
+            <input type="text" id="player2_1_name" class="player-name-input" placeholder="Player 1 Name">
+        </div>
+        <div>
+            <label for="player2_2_name">Player 2:</label>
+            <input type="text" id="player2_2_name" class="player-name-input" placeholder="Player 2 Name">
+        </div>
+        <div>
+            <label for="player2_3_name">Player 3:</label>
+            <input type="text" id="player2_3_name" class="player-name-input" placeholder="Player 3 Name">
+        </div>
+        <div>
+            <label for="player2_4_name">Player 4:</label>
+            <input type="text" id="player2_4_name" class="player-name-input" placeholder="Player 4 Name">
+        </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div class="progress">
+        Question <span id="currentQuestionDisplay">1</span> of 24
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="navigation">
+        <button id="prevButton" onclick="prevQuestion()" disabled>&larr; Previous</button>
+        <button id="nextButton" onclick="nextQuestion()">Next &rarr;</button>
+    </div>
+
+    <!-- Score Sheet Table -->
+    <div class="score-sheet">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tossup Number</th>
+
+                    <!-- Team 1 Player Columns -->
+                    <th id="team1_player1_header">Player 1</th>
+                    <th id="team1_player2_header">Player 2</th>
+                    <th id="team1_player3_header">Player 3</th>
+                    <th id="team1_player4_header">Player 4</th>
+                    <th>Bonuses</th>
+                    <th>Total</th>
+                    <th>Cumulative Score</th>
+                    <th>Notes</th>
+                    <th class="divider"></th>
+                    <th>Cumulative Score</th>
+                    <th>Total</th>
+                    <th>Bonuses</th>
+
+                    <!-- Team 2 Player Columns -->
+                    <th id="team2_player1_header">Player 1</th>
+                    <th id="team2_player2_header">Player 2</th>
+                    <th id="team2_player3_header">Player 3</th>
+                    <th id="team2_player4_header">Player 4</th>
+                </tr>
+            </thead>
+            <tbody id="scoreSheetBody">
+                <!-- Rows for Tossups (1-24) will be dynamically generated -->
+            </tbody>
+            <tfoot>
+                <!-- Totals -->
+                <tr>
+                    <td>Total Powers</td>
+                    <td id="totalPowers1_1">0</td>
+                    <td id="totalPowers1_2">0</td>
+                    <td id="totalPowers1_3">0</td>
+                    <td id="totalPowers1_4">0</td>
+                    <td></td><td></td><td></td><td></td><td class="divider"></td>
+                    <td></td><td></td><td></td>
+                    <td id="totalPowers2_1">0</td>
+                    <td id="totalPowers2_2">0</td>
+                    <td id="totalPowers2_3">0</td>
+                    <td id="totalPowers2_4">0</td>
+                </tr>
+                <tr>
+                    <td>Total Tossups</td>
+                    <td id="totalTossups1_1">0</td>
+                    <td id="totalTossups1_2">0</td>
+                    <td id="totalTossups1_3">0</td>
+                    <td id="totalTossups1_4">0</td>
+                    <td></td><td></td><td></td><td></td><td class="divider"></td>
+                    <td></td><td></td><td></td>
+                    <td id="totalTossups2_1">0</td>
+                    <td id="totalTossups2_2">0</td>
+                    <td id="totalTossups2_3">0</td>
+                    <td id="totalTossups2_4">0</td>
+                </tr>
+                <tr>
+                    <td>Total Negs</td>
+                    <td id="totalNegs1_1">0</td>
+                    <td id="totalNegs1_2">0</td>
+                    <td id="totalNegs1_3">0</td>
+                    <td id="totalNegs1_4">0</td>
+                    <td></td><td></td><td></td><td></td><td class="divider"></td>
+                    <td></td><td></td><td></td>
+                    <td id="totalNegs2_1">0</td>
+                    <td id="totalNegs2_2">0</td>
+                    <td id="totalNegs2_3">0</td>
+                    <td id="totalNegs2_4">0</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- JavaScript -->
+   <script>
+  const tossupCount = 24;
+  const scoreSheetBody = document.getElementById('scoreSheetBody');
+  let currentQuestion = 1;
+  let wholeView = false;
+  let tournamentData = [];
+  let currentRound = 1;
+  let currentRoundIndex = null; // To track the index of the current round
+      // … your declarations …
+    let playerNames = { team1: [], team2: [] };
+
+    // Build the empty sheet right away
+    generateScoreSheet();
+
+    // Show initial question & round
+    document.getElementById('currentQuestionDisplay').innerText = currentQuestion;
+    document.getElementById('currentRoundDisplay').innerText = currentRound;
+
+    // ——————————————
+    // NOW restore from localStorage (table is in place already!)
+    if (localStorage.getItem('tournamentData')) {
+      tournamentData = JSON.parse(localStorage.getItem('tournamentData'));
+      currentRound = parseInt(localStorage.getItem('currentRound'), 10) || 1;
+      const storedIdx = localStorage.getItem('currentRoundIndex');
+      currentRoundIndex = storedIdx !== null
+        ? parseInt(storedIdx, 10)
+        : null;
+      playerNames = JSON.parse(
+        localStorage.getItem('playerNames') ||
+        '{"team1":[],"team2":[]}'
+      );
+
+      updateRoundNavigation();
+      if (currentRoundIndex !== null) {
+        loadRoundData(currentRoundIndex);
+      } else if (tournamentData.length) {
+        document.getElementById('currentRoundDisplay').innerText = currentRound;
+        loadPlayerNames();
+        updateHeaders();
+      }
+    }
+    // ——————————————
+
+     
+   // Generate the initial score sheet
+        generateScoreSheet();
+
+        // Show the first question
+        document.getElementById('currentQuestionDisplay').innerText = currentQuestion;
+        document.getElementById('currentRoundDisplay').innerText = currentRound;
+
+        // Create score sheet rows for each tossup
+        function generateScoreSheet() {
+            scoreSheetBody.innerHTML = '';
+            for (let i = 1; i <= tossupCount; i++) {
+                const row = document.createElement('tr');
+                row.id = `questionRow_${i}`;
+                if (!wholeView && i !== currentQuestion) row.classList.add('hidden');
+                row.innerHTML = `
+                    <td>${i}</td>
+
+                    <!-- Team 1 Player Checkboxes -->
+                    <td class="player-check"><button id="player1_${i}_1" onclick="cyclePlayerState(${i}, 1, 1)"></button></td>
+                    <td class="player-check"><button id="player1_${i}_2" onclick="cyclePlayerState(${i}, 1, 2)"></button></td>
+                    <td class="player-check"><button id="player1_${i}_3" onclick="cyclePlayerState(${i}, 1, 3)"></button></td>
+                    <td class="player-check"><button id="player1_${i}_4" onclick="cyclePlayerState(${i}, 1, 4)"></button></td>
+                    <td class="bonus">
+                        <input type="checkbox" id="bonus1_${i}_1" onchange="updateScore(${i}, 1)">
+                        <input type="checkbox" id="bonus1_${i}_2" onchange="updateScore(${i}, 1)">
+                        <input type="checkbox" id="bonus1_${i}_3" onchange="updateScore(${i}, 1)">
+                    </td>
+                    <td id="tossupBonus1_${i}">0</td>
+                    <td id="cumulative1_${i}">0</td>
+                    <td><textarea class="notes-box" id="notes_${i}" placeholder="Add notes..."></textarea></td>
+                    <td class="divider"></td>
+                    <td id="cumulative2_${i}">0</td>
+                    <td id="tossupBonus2_${i}">0</td>
+                    <td class="bonus">
+                        <input type="checkbox" id="bonus2_${i}_1" onchange="updateScore(${i}, 2)">
+                        <input type="checkbox" id="bonus2_${i}_2" onchange="updateScore(${i}, 2)">
+                        <input type="checkbox" id="bonus2_${i}_3" onchange="updateScore(${i}, 2)">
+                    </td>
+                    <td class="player-check"><button id="player2_${i}_1" onclick="cyclePlayerState(${i}, 2, 1)"></button></td>
+                    <td class="player-check"><button id="player2_${i}_2" onclick="cyclePlayerState(${i}, 2, 2)"></button></td>
+                    <td class="player-check"><button id="player2_${i}_3" onclick="cyclePlayerState(${i}, 2, 3)"></button></td>
+                    <td class="player-check"><button id="player2_${i}_4" onclick="cyclePlayerState(${i}, 2, 4)"></button></td>
+                `;
+                scoreSheetBody.appendChild(row);
+            }
+        }
+
+        // Function to navigate to the next question
+        function nextQuestion() {
+            if (currentQuestion < tossupCount) {
+                if (!wholeView) document.getElementById(`questionRow_${currentQuestion}`).classList.add('hidden');
+                currentQuestion++;
+                if (!wholeView) document.getElementById(`questionRow_${currentQuestion}`).classList.remove('hidden');
+                document.getElementById('currentQuestionDisplay').innerText = currentQuestion;
+                document.getElementById('prevButton').disabled = false;
+                if (currentQuestion === tossupCount) {
+                    document.getElementById('nextButton').disabled = true;
+                }
+            }
+        }
+
+        // Function to navigate to the previous question
+        function prevQuestion() {
+            if (currentQuestion > 1) {
+                if (!wholeView) document.getElementById(`questionRow_${currentQuestion}`).classList.add('hidden');
+                currentQuestion--;
+                if (!wholeView) document.getElementById(`questionRow_${currentQuestion}`).classList.remove('hidden');
+                document.getElementById('currentQuestionDisplay').innerText = currentQuestion;
+                document.getElementById('nextButton').disabled = false;
+                if (currentQuestion === 1) {
+                    document.getElementById('prevButton').disabled = true;
+                }
+            }
+        }
+
+        // Show Whole Score Sheet View
+        function showWholeView() {
+            wholeView = true;
+            document.querySelectorAll('tr[id^="questionRow_"]').forEach(row => row.classList.remove('hidden'));
+            document.getElementById('prevButton').disabled = true;
+            document.getElementById('nextButton').disabled = true;
+            document.querySelector('.progress').classList.add('hidden');
+        }
+
+        // Show Current Question View
+        function showCurrentQuestionView() {
+            wholeView = false;
+            document.querySelectorAll('tr[id^="questionRow_"]').forEach(row => row.classList.add('hidden'));
+            document.getElementById(`questionRow_${currentQuestion}`).classList.remove('hidden');
+            document.getElementById('prevButton').disabled = currentQuestion === 1;
+            document.getElementById('nextButton').disabled = currentQuestion === tossupCount;
+            document.querySelector('.progress').classList.remove('hidden');
+        }
+
+        // Function to cycle player state
+        function cyclePlayerState(tossupNumber, team, player) {
+            const button = document.getElementById(`player${team}_${tossupNumber}_${player}`);
+            const currentColor = button.style.backgroundColor;
+
+            if (currentColor === "green") {
+                button.style.backgroundColor = "black";
+            } else if (currentColor === "black") {
+                button.style.backgroundColor = "red";
+            } else if (currentColor === "red") {
+                button.style.backgroundColor = "white";
+            } else {
+                button.style.backgroundColor = "green";
+            }
+
+            updateScore(tossupNumber, team);
+            updatePlayerTotals(team, player);
+        }
+
+        // Function to update scores
+        function updateScore(tossupNumber, team) {
+            const powerValue = parseInt(document.getElementById('powerVal').value) || 0;
+            const tossupValue = parseInt(document.getElementById('tossupVal').value) || 0;
+            const bonusValue = parseInt(document.getElementById('bonusVal').value) || 0;
+            const negValue = parseInt(document.getElementById('negVal').value) || 0;
+
+            let tossupPoints = 0;
+
+            for (let j = 1; j <= 4; j++) {
+                const button = document.getElementById(`player${team}_${tossupNumber}_${j}`);
+                const color = button.style.backgroundColor;
+                if (color === "green") {
+                    tossupPoints += powerValue;
+                } else if (color === "black") {
+                    tossupPoints += tossupValue;
+                } else if (color === "red") {
+                    tossupPoints += negValue;
+                }
+             saveToLocalStorage();
+            }
+
+            // Calculate bonus points
+            let bonusPoints = 0;
+            for (let j = 1; j <= 3; j++) {
+                if (document.getElementById(`bonus${team}_${tossupNumber}_${j}`).checked) {
+                    bonusPoints += bonusValue;
+                }
+            }
+
+            const rowTotal = tossupPoints + bonusPoints;
+            document.getElementById(`tossupBonus${team}_${tossupNumber}`).innerText = rowTotal;
+
+            // Updated cumulative score calculation
+            let cumulativeScore = 0;
+            for (let i = 1; i <= tossupCount; i++) {
+                cumulativeScore += parseInt(document.getElementById(`tossupBonus${team}_${i}`).innerText) || 0;
+                document.getElementById(`cumulative${team}_${i}`).innerText = cumulativeScore;
+            }
+        }
+
+        // Update player totals
+        function updatePlayerTotals(team, player) {
+            let powers = 0, tossups = 0, negs = 0;
+            for (let i = 1; i <= tossupCount; i++) {
+                const button = document.getElementById(`player${team}_${i}_${player}`);
+                const color = button.style.backgroundColor;
+                if (color === "green") {
+                    powers++;
+                } else if (color === "black") {
+                    tossups++;
+                } else if (color === "red") {
+                    negs++;
+                }
+            }
+            document.getElementById(`totalPowers${team}_${player}`).innerText = powers;
+            document.getElementById(`totalTossups${team}_${player}`).innerText = tossups;
+            document.getElementById(`totalNegs${team}_${player}`).innerText = negs;
+        }
+
+        // Reset the score sheet
+        function resetScores() {
+            for (let i = 1; i <= tossupCount; i++) {
+                for (let j = 1; j <= 4; j++) {
+                    const button1 = document.getElementById(`player1_${i}_${j}`);
+                    const button2 = document.getElementById(`player2_${i}_${j}`);
+                    button1.style.backgroundColor = "white";
+                    button2.style.backgroundColor = "white";
+                }
+                for (let j = 1; j <= 3; j++) {
+                    document.getElementById(`bonus1_${i}_${j}`).checked = false;
+                    document.getElementById(`bonus2_${i}_${j}`).checked = false;
+                }
+                document.getElementById(`tossupBonus1_${i}`).innerText = 0;
+                document.getElementById(`tossupBonus2_${i}`).innerText = 0;
+                document.getElementById(`cumulative1_${i}`).innerText = 0;
+                document.getElementById(`cumulative2_${i}`).innerText = 0;
+                document.getElementById(`notes_${i}`).value = "";
+            }
+
+            for (let player = 1; player <= 4; player++) {
+                document.getElementById(`totalPowers1_${player}`).innerText = 0;
+                document.getElementById(`totalTossups1_${player}`).innerText = 0;
+                document.getElementById(`totalNegs1_${player}`).innerText = 0;
+                document.getElementById(`totalPowers2_${player}`).innerText = 0;
+                document.getElementById(`totalTossups2_${player}`).innerText = 0;
+                document.getElementById(`totalNegs2_${player}`).innerText = 0;
+            }
+
+            // Reset to the first question
+            if (!wholeView) {
+                document.getElementById(`questionRow_${currentQuestion}`).classList.add('hidden');
+                currentQuestion = 1;
+                document.getElementById(`questionRow_${currentQuestion}`).classList.remove('hidden');
+                document.getElementById('currentQuestionDisplay').innerText = currentQuestion;
+                document.getElementById('prevButton').disabled = true;
+                document.getElementById('nextButton').disabled = false;
+            }
+        }
+
+        // Start a new tournament
+           function startNewTournament() {
+      if (!confirm("Are you sure you want to start a new tournament? All data will be lost.")) return;
+      // ——————————————
+      // Clear out persistence
+      localStorage.removeItem('tournamentData');
+      localStorage.removeItem('currentRound');
+      localStorage.removeItem('currentRoundIndex');
+      localStorage.removeItem('playerNames');
+      // ——————————————
+      tournamentData = [];
+      currentRound = 1;
+      currentRoundIndex = null;
+      resetScores();
+      document.getElementById('tournamentName').value = '';
+      document.getElementById('roomNumber').value = '';
+      document.getElementById('team1').value = '';
+      document.getElementById('team2').value = '';
+      playerNames = { team1: [], team2: [] };
+      document.getElementById('currentRoundDisplay').innerText = currentRound;
+      updateRoundNavigation();
+      loadPlayerNames();
+      updateHeaders();
+    }
+
+
+        // Finish current round
+        function finishRound() {
+              if (!confirm("Are you sure you want to finish this round?")) return;
+      saveCurrentRound();
+      // ←—— Persist after each round
+      saveToLocalStorage();
+      resetScores();
+            if (currentRoundIndex === null || currentRoundIndex === tournamentData.length - 1) {
+                currentRound++;
+            }
+            currentRoundIndex = null;
+            document.getElementById('currentRoundDisplay').innerText = currentRound;
+            updateRoundNavigation();
+            loadPlayerNames();
+            updateHeaders();
+        }
+
+        // Save current round data
+        function saveCurrentRound() {
+            const roundData = {
+                roundNumber: currentRound,
+                team1: document.getElementById('team1').value,
+                team2: document.getElementById('team2').value,
+                players1: [
+                    document.getElementById('player1_1_name').value,
+                    document.getElementById('player1_2_name').value,
+                    document.getElementById('player1_3_name').value,
+                    document.getElementById('player1_4_name').value
+                ],
+                players2: [
+                    document.getElementById('player2_1_name').value,
+                    document.getElementById('player2_2_name').value,
+                    document.getElementById('player2_3_name').value,
+                    document.getElementById('player2_4_name').value
+                ],
+                scores: [],
+                playerTotals1: [], // To store player totals for team 1
+                playerTotals2: []  // To store player totals for team 2
+            };
+
+            // Get player totals
+            for (let player = 1; player <= 4; player++) {
+                roundData.playerTotals1.push({
+                    name: document.getElementById(`player1_${player}_name`).value || `Player ${player}`,
+                    powers: parseInt(document.getElementById(`totalPowers1_${player}`).innerText),
+                    tossups: parseInt(document.getElementById(`totalTossups1_${player}`).innerText),
+                    negs: parseInt(document.getElementById(`totalNegs1_${player}`).innerText)
+                });
+                roundData.playerTotals2.push({
+                    name: document.getElementById(`player2_${player}_name`).value || `Player ${player}`,
+                    powers: parseInt(document.getElementById(`totalPowers2_${player}`).innerText),
+                    tossups: parseInt(document.getElementById(`totalTossups2_${player}`).innerText),
+                    negs: parseInt(document.getElementById(`totalNegs2_${player}`).innerText)
+                });
+            }
+
+            for (let i = 1; i <= tossupCount; i++) {
+                const tossup = {
+                    number: i,
+                    team1: {
+                        players: [],
+                        bonuses: [],
+                        total: document.getElementById(`tossupBonus1_${i}`).innerText,
+                        cumulative: document.getElementById(`cumulative1_${i}`).innerText
+                    },
+                    team2: {
+                        players: [],
+                        bonuses: [],
+                        total: document.getElementById(`tossupBonus2_${i}`).innerText,
+                        cumulative: document.getElementById(`cumulative2_${i}`).innerText
+                    },
+                    notes: document.getElementById(`notes_${i}`).value
+                };
+
+                for (let j = 1; j <= 4; j++) {
+                    tossup.team1.players.push(getPlayerScoreValue(`player1_${i}_${j}`));
+                    tossup.team2.players.push(getPlayerScoreValue(`player2_${i}_${j}`));
+                }
+
+                for (let j = 1; j <= 3; j++) {
+                    tossup.team1.bonuses.push(document.getElementById(`bonus1_${i}_${j}`).checked);
+                    tossup.team2.bonuses.push(document.getElementById(`bonus2_${i}_${j}`).checked);
+                }
+
+                roundData.scores.push(tossup);
+            }
+
+            if (currentRoundIndex !== null) {
+                tournamentData[currentRoundIndex] = roundData;
+            } else {
+                tournamentData.push(roundData);
+                currentRoundIndex = tournamentData.length - 1;
+            }
+
+            // Retain player names
+            playerNames.team1 = roundData.players1;
+            playerNames.team2 = roundData.players2;
+        }
+
+        // Load player names for new round
+        function loadPlayerNames() {
+            const players1 = playerNames.team1;
+            const players2 = playerNames.team2;
+
+            document.getElementById('player1_1_name').value = players1[0] || '';
+            document.getElementById('player1_2_name').value = players1[1] || '';
+            document.getElementById('player1_3_name').value = players1[2] || '';
+            document.getElementById('player1_4_name').value = players1[3] || '';
+
+            document.getElementById('player2_1_name').value = players2[0] || '';
+            document.getElementById('player2_2_name').value = players2[1] || '';
+            document.getElementById('player2_3_name').value = players2[2] || '';
+            document.getElementById('player2_4_name').value = players2[3] || '';
+        }
+
+        // Update round navigation buttons
+        function updateRoundNavigation() {
+            const roundNavDiv = document.getElementById('roundNavigation');
+            roundNavDiv.innerHTML = '';
+            tournamentData.forEach((round, index) => {
+                const button = document.createElement('button');
+                button.innerText = `Round ${round.roundNumber}`;
+                button.onclick = () => loadRoundData(index);
+                roundNavDiv.appendChild(button);
+            });
+        }
+
+        // Load round data
+        function loadRoundData(index) {
+            const roundData = tournamentData[index];
+            currentRound = roundData.roundNumber;
+            currentRoundIndex = index;
+            document.getElementById('currentRoundDisplay').innerText = currentRound;
+            document.getElementById('team1').value = roundData.team1;
+            document.getElementById('team2').value = roundData.team2;
+
+            playerNames.team1 = roundData.players1;
+            playerNames.team2 = roundData.players2;
+            loadPlayerNames();
+            updateHeaders();
+
+            // Reset and populate score sheet
+            resetScores();
+            for (let i = 1; i <= tossupCount; i++) {
+                const tossup = roundData.scores[i - 1];
+
+                // Load player scores
+                for (let j = 1; j <= 4; j++) {
+                    const score1 = tossup.team1.players[j - 1];
+                    const score2 = tossup.team2.players[j - 1];
+
+                    const button1 = document.getElementById(`player1_${i}_${j}`);
+                    const button2 = document.getElementById(`player2_${i}_${j}`);
+
+                    button1.style.backgroundColor = getColorFromScore(score1);
+                    button2.style.backgroundColor = getColorFromScore(score2);
+                }
+
+                // Load bonuses
+                for (let j = 1; j <= 3; j++) {
+                    document.getElementById(`bonus1_${i}_${j}`).checked = tossup.team1.bonuses[j - 1];
+                    document.getElementById(`bonus2_${i}_${j}`).checked = tossup.team2.bonuses[j - 1];
+                }
+
+                // Load totals
+                document.getElementById(`tossupBonus1_${i}`).innerText = tossup.team1.total;
+                document.getElementById(`tossupBonus2_${i}`).innerText = tossup.team2.total;
+                document.getElementById(`cumulative1_${i}`).innerText = tossup.team1.cumulative;
+                document.getElementById(`cumulative2_${i}`).innerText = tossup.team2.cumulative;
+
+                // Load notes
+                document.getElementById(`notes_${i}`).value = tossup.notes;
+
+                // Update player totals
+                for (let j = 1; j <= 4; j++) {
+                    updatePlayerTotals(1, j);
+                    updatePlayerTotals(2, j);
+                }
+            }
+        }
+
+        // Helper function to get color from score
+        function getColorFromScore(score) {
+            const powerValue = parseInt(document.getElementById('powerVal').value) || 15;
+            const tossupValue = parseInt(document.getElementById('tossupVal').value) || 10;
+            const negValue = parseInt(document.getElementById('negVal').value) || -5;
+
+            if (score == powerValue) return 'green';
+            if (score == tossupValue) return 'black';
+            if (score == negValue) return 'red';
+            return 'white';
+        }
+
+        // Helper function to get player's score value
+        function getPlayerScoreValue(buttonId) {
+            const button = document.getElementById(buttonId);
+            const color = button.style.backgroundColor;
+            const powerValue = parseInt(document.getElementById('powerVal').value) || 15;
+            const tossupValue = parseInt(document.getElementById('tossupVal').value) || 10;
+            const negValue = parseInt(document.getElementById('negVal').value) || -5;
+
+            if (color === "green") return powerValue;
+            if (color === "black") return tossupValue;
+            if (color === "red") return negValue;
+            return 0;
+        }
+
+        // Export current round
+        function exportCurrentRound() {
+            saveCurrentRound();
+            exportToPrintableFormat([tournamentData[currentRoundIndex]]);
+        }
+
+        // Export entire tournament
+        function exportTournament() {
+            saveCurrentRound();
+            exportToPrintableFormat(tournamentData);
+        }
+
+        // Export to printable format
+        function exportToPrintableFormat(dataArray) {
+            let printableContent = '<html><head><title>Tournament Export</title></head><body>';
+            printableContent += `<h1>${document.getElementById('tournamentName').value || 'Tournament'} Export</h1>`;
+
+            // Initialize tournament summary variables
+            let tournamentTotals = {
+                team1: { powers: 0, tossups: 0, negs: 0, totalPoints: 0, bonusPoints: 0, bonusesHeard: 0 },
+                team2: { powers: 0, tossups: 0, negs: 0, totalPoints: 0, bonusPoints: 0, bonusesHeard: 0 }
+            };
+
+            let playerStats = [];
+
+            dataArray.forEach(roundData => {
+                printableContent += `<h2>Round ${roundData.roundNumber}</h2>`;
+                printableContent += `<p>Room Number: ${document.getElementById('roomNumber').value || ''}</p>`;
+                printableContent += `<p>${roundData.team1} vs. ${roundData.team2}</p>`;
+
+                // Player Totals
+                printableContent += '<h3>Player Totals</h3>';
+                printableContent += '<table border="1" cellspacing="0" cellpadding="5">';
+                printableContent += '<tr><th>Team</th><th>Player</th><th>Powers</th><th>Tossups</th><th>Negs</th></tr>';
+
+                // Team 1 Player Totals
+                roundData.playerTotals1.forEach(player => {
+                    printableContent += `<tr><td>${roundData.team1}</td><td>${player.name}</td><td>${player.powers}</td><td>${player.tossups}</td><td>${player.negs}</td></tr>`;
+
+                    // Update tournament totals
+                    tournamentTotals.team1.powers += player.powers;
+                    tournamentTotals.team1.tossups += player.tossups;
+                    tournamentTotals.team1.negs += player.negs;
+
+                    // Update player stats
+                    updatePlayerStats(playerStats, player.name, roundData.team1, player.powers, player.tossups, player.negs);
+                });
+
+                // Team 2 Player Totals
+                roundData.playerTotals2.forEach(player => {
+                    printableContent += `<tr><td>${roundData.team2}</td><td>${player.name}</td><td>${player.powers}</td><td>${player.tossups}</td><td>${player.negs}</td></tr>`;
+
+                    // Update tournament totals
+                    tournamentTotals.team2.powers += player.powers;
+                    tournamentTotals.team2.tossups += player.tossups;
+                    tournamentTotals.team2.negs += player.negs;
+
+                    // Update player stats
+                    updatePlayerStats(playerStats, player.name, roundData.team2, player.powers, player.tossups, player.negs);
+                });
+
+                printableContent += '</table>';
+
+                // Game Scores
+                printableContent += '<h3>Game Scores</h3>';
+                printableContent += '<table border="1" cellspacing="0" cellpadding="5">';
+                printableContent += '<tr><th>Tossup</th>';
+
+                // Team 1 Player Headers
+                roundData.players1.forEach(player => {
+                    printableContent += `<th>${player || 'Player'}</th>`;
+                });
+
+                printableContent += '<th>Bonuses</th><th>Total</th><th>Cumulative</th><th>Notes</th><th class="divider"></th><th>Cumulative</th><th>Total</th><th>Bonuses</th>';
+
+                // Team 2 Player Headers
+                roundData.players2.forEach(player => {
+                    printableContent += `<th>${player || 'Player'}</th>`;
+                });
+                printableContent += '</tr>';
+
+                let lastCumulative1 = 0;
+                let lastCumulative2 = 0;
+
+                roundData.scores.forEach(score => {
+                    printableContent += `<tr><td>${score.number}</td>`;
+
+                    // Team 1 Player Scores
+                    score.team1.players.forEach(value => {
+                        printableContent += `<td>${value}</td>`;
+                    });
+
+                    // Team 1 Bonuses
+                    printableContent += `<td>${score.team1.bonuses.map(b => b ? 'Y' : 'N').join(',')}</td>`;
+                    printableContent += `<td>${score.team1.total}</td>`;
+                    printableContent += `<td>${score.team1.cumulative}</td>`;
+                    printableContent += `<td>${score.notes || ''}</td>`;
+                    printableContent += '<td class="divider"></td>';
+
+                    // Team 2 Cumulative and Total
+                    printableContent += `<td>${score.team2.cumulative}</td>`;
+                    printableContent += `<td>${score.team2.total}</td>`;
+
+                    // Team 2 Bonuses
+                    printableContent += `<td>${score.team2.bonuses.map(b => b ? 'Y' : 'N').join(',')}</td>`;
+
+                    // Team 2 Player Scores
+                    score.team2.players.forEach(value => {
+                        printableContent += `<td>${value}</td>`;
+                    });
+
+                    printableContent += '</tr>';
+
+                    // Update tournament totals for teams
+                    lastCumulative1 = parseInt(score.team1.cumulative);
+                    lastCumulative2 = parseInt(score.team2.cumulative);
+
+                    // Count bonuses heard and bonus points
+                    if (parseInt(score.team1.total) > 0) {
+                        tournamentTotals.team1.bonusesHeard++;
+                        tournamentTotals.team1.bonusPoints += calculateBonusPoints(score.team1.bonuses);
+                    }
+                    if (parseInt(score.team2.total) > 0) {
+                        tournamentTotals.team2.bonusesHeard++;
+                        tournamentTotals.team2.bonusPoints += calculateBonusPoints(score.team2.bonuses);
+                    }
+                });
+
+                // Update total points after the round
+                tournamentTotals.team1.totalPoints += lastCumulative1;
+                tournamentTotals.team2.totalPoints += lastCumulative2;
+
+                printableContent += '</table><br>';
+            });
+
+            // Calculate averages
+            const roundsPlayed = dataArray.length;
+            const team1PPG = tournamentTotals.team1.totalPoints / roundsPlayed;
+            const team2PPG = tournamentTotals.team2.totalPoints / roundsPlayed;
+
+            const team1PPB = tournamentTotals.team1.bonusesHeard > 0
+                ? (tournamentTotals.team1.bonusPoints / tournamentTotals.team1.bonusesHeard).toFixed(2)
+                : 'N/A';
+            const team2PPB = tournamentTotals.team2.bonusesHeard > 0
+                ? (tournamentTotals.team2.bonusPoints / tournamentTotals.team2.bonusesHeard).toFixed(2)
+                : 'N/A';
+
+            // Tournament Summary
+            printableContent += '<h2>Tournament Summary</h2>';
+            printableContent += '<h3>Team Totals</h3>';
+            printableContent += '<table border="1" cellspacing="0" cellpadding="5">';
+            printableContent += '<tr><th>Team</th><th>Total Powers</th><th>Total Tossups</th><th>Total Negs</th><th>Total Points</th><th>PPG</th><th>PPB</th></tr>';
+            printableContent += `<tr><td>${dataArray[0].team1}</td><td>${tournamentTotals.team1.powers}</td><td>${tournamentTotals.team1.tossups}</td><td>${tournamentTotals.team1.negs}</td><td>${tournamentTotals.team1.totalPoints}</td><td>${team1PPG.toFixed(2)}</td><td>${team1PPB}</td></tr>`;
+            printableContent += `<tr><td>${dataArray[0].team2}</td><td>${tournamentTotals.team2.powers}</td><td>${tournamentTotals.team2.tossups}</td><td>${tournamentTotals.team2.negs}</td><td>${tournamentTotals.team2.totalPoints}</td><td>${team2PPG.toFixed(2)}</td><td>${team2PPB}</td></tr>`;
+            printableContent += '</table>';
+
+            // Player Performance Ranking
+            printableContent += '<h3>Player Performance Ranking</h3>';
+            printableContent += '<table border="1" cellspacing="0" cellpadding="5">';
+            printableContent += '<tr><th>Rank</th><th>Player</th><th>Team</th><th>Total Points</th><th>Powers</th><th>Tossups</th><th>Negs</th></tr>';
+
+            // Calculate total points for each player
+            playerStats.forEach(player => {
+                const powerValue = parseInt(document.getElementById('powerVal').value) || 15;
+                const tossupValue = parseInt(document.getElementById('tossupVal').value) || 10;
+                const negValue = parseInt(document.getElementById('negVal').value) || -5;
+
+                player.totalPoints = (player.powers * powerValue) + (player.tossups * tossupValue) + (player.negs * negValue);
+            });
+
+            // Sort players by total points
+            playerStats.sort((a, b) => b.totalPoints - a.totalPoints);
+
+            // Display player rankings
+            playerStats.forEach((player, index) => {
+                printableContent += `<tr><td>${index + 1}</td><td>${player.name}</td><td>${player.team}</td><td>${player.totalPoints}</td><td>${player.powers}</td><td>${player.tossups}</td><td>${player.negs}</td></tr>`;
+            });
+
+            printableContent += '</table>';
+
+            printableContent += '</body></html>';
+
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(printableContent);
+            newWindow.document.close();
+            newWindow.print();
+        }
+
+        // Helper function to calculate bonus points
+        function calculateBonusPoints(bonuses) {
+            const bonusValue = parseInt(document.getElementById('bonusVal').value) || 10;
+            return bonuses.filter(b => b).length * bonusValue;
+        }
+
+        // Helper function to update player stats
+        function updatePlayerStats(playerStats, playerName, teamName, powers, tossups, negs) {
+            let player = playerStats.find(p => p.name === playerName && p.team === teamName);
+            if (!player) {
+                player = { name: playerName, team: teamName, powers: 0, tossups: 0, negs: 0, totalPoints: 0 };
+                playerStats.push(player);
+            }
+            player.powers += powers;
+            player.tossups += tossups;
+            player.negs += negs;
+        }
+
+        // Update headers when player names are entered
+        function updateHeaders() {
+            document.getElementById('team1_player1_header').innerText = document.getElementById('player1_1_name').value || 'Player 1';
+            document.getElementById('team1_player2_header').innerText = document.getElementById('player1_2_name').value || 'Player 2';
+            document.getElementById('team1_player3_header').innerText = document.getElementById('player1_3_name').value || 'Player 3';
+            document.getElementById('team1_player4_header').innerText = document.getElementById('player1_4_name').value || 'Player 4';
+
+            document.getElementById('team2_player1_header').innerText = document.getElementById('player2_1_name').value || 'Player 1';
+            document.getElementById('team2_player2_header').innerText = document.getElementById('player2_2_name').value || 'Player 2';
+            document.getElementById('team2_player3_header').innerText = document.getElementById('player2_3_name').value || 'Player 3';
+            document.getElementById('team2_player4_header').innerText = document.getElementById('player2_4_name').value || 'Player 4';
+        }
+
+        // Event listeners for player name inputs
+        document.getElementById('player1_1_name').addEventListener('input', updateHeaders);
+        document.getElementById('player1_2_name').addEventListener('input', updateHeaders);
+        document.getElementById('player1_3_name').addEventListener('input', updateHeaders);
+        document.getElementById('player1_4_name').addEventListener('input', updateHeaders);
+        document.getElementById('player2_1_name').addEventListener('input', updateHeaders);
+        document.getElementById('player2_2_name').addEventListener('input', updateHeaders);
+        document.getElementById('player2_3_name').addEventListener('input', updateHeaders);
+        document.getElementById('player2_4_name').addEventListener('input', updateHeaders);
+   
+ // Persist the full tournamentData + pointers into localStorage
+    function saveToLocalStorage() {
+      // this will also push the "current" round into tournamentData
+      saveCurrentRound();
+      localStorage.setItem('tournamentData', JSON.stringify(tournamentData));
+      localStorage.setItem('currentRound', currentRound);
+      localStorage.setItem('currentRoundIndex', currentRoundIndex);
+      localStorage.setItem('playerNames', JSON.stringify(playerNames));
+    }
+    
+// Before the user navigates away, stash everything
+    window.addEventListener('beforeunload', saveToLocalStorage);
+
+    </script>
+
+</body>
+</html>
