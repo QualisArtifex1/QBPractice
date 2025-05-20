@@ -11,12 +11,14 @@
       --text: #333333;
       --power-green: #28a745;
       --tossup-blue: #0069d9;
+      --bbpower-blue: #17a2b8;
       --bb-yellow: #ffc107;
       --neg-red: #dc3545;
       --neg-warning-bg: #f8d7da;
       --notif-bg: #333;
       --notif-text: #fff;
     }
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       background-color: var(--background);
@@ -39,9 +41,7 @@
       gap: 10px;
       margin-bottom: 20px;
     }
-    .controls label {
-      font-weight: bold;
-    }
+    .controls label { font-weight: bold; }
     .controls input[type="date"],
     .controls input[type="number"] {
       padding: 5px;
@@ -62,10 +62,14 @@
       color: var(--background);
       cursor: pointer;
       margin-left: 5px;
+      min-width: 8ch;
+      white-space: nowrap;
+      line-height: normal;
     }
     button:hover { opacity: 0.9; }
     .power-btn { background-color: var(--power-green); }
     .tossup-btn { background-color: var(--tossup-blue); }
+    .bbpower-btn { background-color: var(--bbpower-blue); }
     .bb-btn { background-color: var(--bb-yellow); color: #000; }
     .neg-btn { background-color: var(--neg-red); }
     table {
@@ -144,6 +148,9 @@
     <label for="tossupValue">Tossup:</label>
     <input type="number" id="tossupValue" value="10">
 
+    <label for="bbPowerValue">BB Power:</label>
+    <input type="number" id="bbPowerValue" value="10">
+
     <label for="bbValue">Bounce Back:</label>
     <input type="number" id="bbValue" value="5">
 
@@ -165,6 +172,7 @@
         <th>Score</th>
         <th>Power</th>
         <th>Tossup</th>
+        <th>BB Power</th>
         <th>BB</th>
         <th>Neg</th>
       </tr>
@@ -192,6 +200,7 @@
         <td class="score-cell">0</td>
         <td><button class="power-btn" onclick="updateScore(this,'power')">Power</button> <span class="power-count">0</span></td>
         <td><button class="tossup-btn" onclick="updateScore(this,'tossup')">Tossup</button> <span class="tossup-count">0</span></td>
+        <td><button class="bbpower-btn" onclick="updateScore(this,'bbPower')">BB Power</button> <span class="bbPower-count">0</span></td>
         <td><button class="bb-btn" onclick="updateScore(this,'bb')">BB</button> <span class="bb-count">0</span></td>
         <td><button class="neg-btn" onclick="updateScore(this,'neg')">Neg</button> <span class="neg-count">0</span></td>
       `;
@@ -212,7 +221,7 @@
     function finishPractice() {
       const date = document.getElementById('practiceDate').value;
       let text = `Practice Date: ${date}\n\n`;
-      document.querySelectorAll('#scoreBody tr').forEach(row => {
+      document.querySelectorAll('#scoreBody<tr>').forEach(row => {
         const name = row.querySelector('.name-input').value || 'Unnamed';
         const score = row.querySelector('.score-cell').textContent;
         text += `${name}: ${score}\n`;
@@ -230,7 +239,7 @@
       try {
         document.execCommand('copy');
         showNotif();
-      } catch (e) {
+      } catch {
         alert('Could not copy to clipboard. Please copy manually:\n' + text);
       }
       document.body.removeChild(ta);
