@@ -67,11 +67,13 @@
       line-height: normal;
     }
     button:hover { opacity: 0.9; }
-    .power-btn { background-color: var(--power-green); }
-    .tossup-btn { background-color: var(--tossup-blue); }
+    .power-btn   { background-color: var(--power-green); }
+    .tossup-btn  { background-color: var(--tossup-blue); }
     .bbpower-btn { background-color: var(--bbpower-blue); }
-    .bb-btn { background-color: var(--bb-yellow); color: #000; }
-    .neg-btn { background-color: var(--neg-red); }
+    .bb-btn      { background-color: var(--bb-yellow); color: #000; }
+    .neg-btn     { background-color: var(--neg-red); }
+    .undo-btn    { background-color: #6c757d; } /* gray-ish undo */
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -87,8 +89,9 @@
       color: var(--background);
     }
     tr:nth-child(even) { background-color: #f2f2f2; }
-    tr:hover { background-color: #e6e6e6; }
+    tr:hover           { background-color: #e6e6e6; }
     .neg-warning { background-color: var(--neg-warning-bg) !important; }
+
     input.name-input {
       width: 100%;
       padding: 5px;
@@ -161,8 +164,9 @@
     <input type="checkbox" id="splitToggle">
 
     <button id="addPlayerBtn" class="tossup-btn" type="button">Add Player</button>
-    <button id="finishBtn" class="tossup-btn" type="button">Copy Scores</button>
-    <button id="clearBtn" class="tossup-btn" type="button">Start New Practice</button>
+    <button id="undoBtn"      class="undo-btn"   type="button">Undo</button>
+    <button id="finishBtn"    class="tossup-btn" type="button">Copy Scores</button>
+    <button id="clearBtn"     class="tossup-btn" type="button">Start New Practice</button>
   </div>
 
   <table id="scoreTable">
@@ -183,49 +187,121 @@
   <div id="copyNotif">Copied to clipboard!</div>
 
   <script>
+    // → Global action stack to record each scoring event
+    let actionStack = [];
+
     document.addEventListener('DOMContentLoaded', () => {
+      // Set today's date by default
       document.getElementById('practiceDate').valueAsDate = new Date();
+
       document.getElementById('addPlayerBtn').onclick = addPlayerRow;
-      document.getElementById('finishBtn').onclick = finishPractice;
-      document.getElementById('clearBtn').onclick = clearPractice;
+      document.getElementById('undoBtn').onclick      = undoLastAction;
+      document.getElementById('finishBtn').onclick    = finishPractice;
+      document.getElementById('clearBtn').onclick     = clearPractice;
       document.getElementById('splitToggle').onchange = toggleSplit;
+
+      // Start with 4 blank rows
       for (let i = 0; i < 4; i++) addPlayerRow();
     });
 
     function addPlayerRow() {
       const tbody = document.getElementById('scoreBody');
       const tr = document.createElement('tr');
+
       tr.innerHTML = `
         <td><input type="text" class="name-input" placeholder="Enter name"></td>
         <td class="score-cell">0</td>
-        <td><button class="power-btn" onclick="updateScore(this,'power')">Power</button> <span class="power-count">0</span></td>
-        <td><button class="tossup-btn" onclick="updateScore(this,'tossup')">Tossup</button> <span class="tossup-count">0</span></td>
-        <td><button class="bbpower-btn" onclick="updateScore(this,'bbPower')">BB Power</button> <span class="bbPower-count">0</span></td>
-        <td><button class="bb-btn" onclick="updateScore(this,'bb')">BB</button> <span class="bb-count">0</span></td>
-        <td><button class="neg-btn" onclick="updateScore(this,'neg')">Neg</button> <span class="neg-count">0</span></td>
+        <td>
+          <button class="power-btn"   onclick="updateScore(this,'power')">Power</button>
+          <span class="power-count">0</span>
+        </td>
+        <td>
+          <button class="tossup-btn"  onclick="updateScore(this,'tossup')">Tossup</button>
+          <span class="tossup-count">0</span>
+        </td>
+        <td>
+          <button class="bbpower-btn" onclick="updateScore(this,'bbPower')">BB Power</button>
+          <span class="bbPower-count">0</span>
+        </td>
+        <td>
+          <button class="bb-btn"      onclick="updateScore(this,'bb')">BB</button>
+          <span class="bb-count">0</span>
+        </td>
+        <td>
+          <button class="neg-btn"     onclick="updateScore(this,'neg')">Neg</button>
+          <span class="neg-count">0</span>
+        </td>
       `;
+
       tbody.appendChild(tr);
     }
 
     function updateScore(btn, type) {
-      const val = parseInt(document.getElementById(type + 'Value').value, 10) || 0;
+      const valueInputId = type + 'Value';
+      const val = parseInt(document.getElementById(valueInputId).value, 10) || 0;
       const row = btn.closest('tr');
+
+      // Record this action on the stack BEFORE we mutate anything
+      actionStack.push({
+        row,
+        type,
+        value: val
+      });
+
+      // Now actually update the UI:
       const scoreCell = row.querySelector('.score-cell');
       const countSpan = row.querySelector(`.${type}-count`);
-      scoreCell.textContent = parseInt(scoreCell.textContent, 10) + val;
-      const newCount = parseInt(countSpan.textContent, 10) + 1;
+
+      // Increase total score
+      const oldScore = parseInt(scoreCell.textContent, 10);
+      scoreCell.textContent = oldScore + val;
+
+      // Increase the count for this category
+      const oldCount = parseInt(countSpan.textContent, 10);
+      const newCount = oldCount + 1;
       countSpan.textContent = newCount;
-      if (type === 'neg' && newCount >= 6) row.classList.add('neg-warning');
+
+      // If it's a neg and crosses the warning threshold, add warning class
+      if (type === 'neg' && newCount >= 6) {
+        row.classList.add('neg-warning');
+      }
+    }
+
+    function undoLastAction() {
+      // If there's nothing to undo, do nothing
+      if (actionStack.length === 0) return;
+
+      // Remove the last action from the stack
+      const { row, type, value } = actionStack.pop();
+
+      // Revert the score change
+      const scoreCell = row.querySelector('.score-cell');
+      const currentScore = parseInt(scoreCell.textContent, 10);
+      scoreCell.textContent = currentScore - value;
+
+      // Revert the count decrement
+      const countSpan = row.querySelector(`.${type}-count`);
+      const currentCount = parseInt(countSpan.textContent, 10);
+      const newCount = currentCount - 1;
+      countSpan.textContent = newCount;
+
+      // If it was a neg that just fell below 6, remove the warning background
+      if (type === 'neg' && newCount < 6) {
+        row.classList.remove('neg-warning');
+      }
     }
 
     function finishPractice() {
       const date = document.getElementById('practiceDate').value;
       let text = `Practice Date: ${date}\n\n`;
+
+      // Grab each row's name and score
       document.querySelectorAll('#scoreBody tr').forEach(row => {
         const name = row.querySelector('.name-input').value || 'Unnamed';
         const score = row.querySelector('.score-cell').textContent;
         text += `${name}: ${score}\n`;
       });
+
       fallbackCopy(text);
     }
 
@@ -252,14 +328,22 @@
     }
 
     function clearPractice() {
+      // Clear out all rows and reset the date
       document.getElementById('scoreBody').innerHTML = '';
       document.getElementById('practiceDate').valueAsDate = new Date();
+
+      // Reset the action stack so old actions can't be undone
+      actionStack = [];
+
+      // Add 4 blank rows again
       for (let i = 0; i < 4; i++) addPlayerRow();
     }
 
     function toggleSplit(e) {
       const table = document.getElementById('scoreTable');
-      e.target.checked ? table.classList.add('split') : table.classList.remove('split');
+      e.target.checked
+        ? table.classList.add('split')
+        : table.classList.remove('split');
     }
   </script>
 </body>
